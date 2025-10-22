@@ -15,7 +15,7 @@ st.markdown("---")
 # 2. 數據源定義 (已修正為您的本地 Shapefile 路徑)
 # ----------------------------------------------------------------------------
 # *** 根據您的檔案結構，使用本地 data 資料夾和正確的檔案名 ***
-VECTOR_URL = "/workspaces/1022-GIS-TEST/data/COUNTY_MOI_1140318.shp" 
+VECTOR_URL = "data/COUNTY_MOI_1140318.shp" 
 VECTOR_NAME = "台灣縣市邊界１ (內政部數據)"
 
 # 台灣的中心坐標和合適的縮放級別
