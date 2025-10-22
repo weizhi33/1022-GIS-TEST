@@ -9,7 +9,7 @@ st.Page("page_about.py", title="sQ")
 ]
 # 2. o st.navigation() ½ (Ït)
 with st.sidebar:
-st.title("App ½")
+    st.title("App ½")
 # st.navigation() Þóö¿¯
 selected_page = st.navigation(pages)
 # 3. ¯ö¿¯
