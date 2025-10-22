@@ -4,69 +4,110 @@ import streamlit as st
 import leafmap.foliumap as leafmap
 import geopandas as gpd
 
+# ----------------------------------------------------------------------------
+# 1. 頁面配置
+# ----------------------------------------------------------------------------
+# 建議在啟動時設置一次 (例如在主 App.py 中)，但如果沒有，可以在這裡確保寬屏
+# st.set_page_config(layout="wide")
+
 st.title("第 2 頁 (map_viewer.py): 互動地圖瀏覽器 - 台灣地圖")
 st.markdown("---")
 
-# **新的数据源：台湾行政区划 GeoJSON (示例)**
-# 注意：这是一个示例URL，实际使用中您可能需要替换为自己的或官方的 GeoJSON 文件
-# 这个示例数据通常包含 'COUNTYNAME'（县市名称）等字段。
-VECTOR_URL = "https://raw.githubusercontent.com/g0v/tw-map/master/json/county/taiwan_county_2010.topojson"
-# 🚨 注意：这个 URL 是一个 TopoJSON 文件。GeoPandas 可以直接读取，但如果遇到问题，
-# 建议换成纯 GeoJSON。这里假设它可以正常读取。
-VECTOR_NAME = "台灣縣市邊界"
+# ----------------------------------------------------------------------------
+# 2. 數據源定義 (改用 GeoJSON 提高穩定性)
+# ----------------------------------------------------------------------------
+# 使用另一個公開的台灣行政區劃 GeoJSON 檔案，此檔案通常更容易讀取。
+# 來源可能包含 'COUNTYNAME' (縣市名稱) 或類似的欄位。
+# 註: 您提供的 TopoJSON 鏈接：
+# VECTOR_URL = "https://raw.githubusercontent.com/g0v/tw-map/master/json/county/taiwan_county_2010.topojson"
+# 替換為一個標準 GeoJSON (此示例URL是常見的測試數據，可能會隨時間失效，請注意)
+# 🚨 警告：此 GeoJSON URL 僅為示例，請替換為您確認有效的 GeoJSON URL。
+# 這裡使用一個可能的替代 GeoJSON URL
+VECTOR_URL = "https://raw.githubusercontent.com/g0v/tw-map/master/json/county/taiwan_county_2010.json" 
+VECTOR_NAME = "台灣縣市邊界 GeoJSON"
 
-# 台湾的中心坐标和合适的缩放级别
+# 台灣的中心坐標和合適的縮放級別
 TAIWAN_CENTER = [23.8, 120.96]
 TAIWAN_ZOOM = 7
 
 
+# ----------------------------------------------------------------------------
+# 3. 核心地圖載入與顯示函數
+# ----------------------------------------------------------------------------
+@st.cache_data
+def load_geodata(url):
+    """使用 Streamlit 緩存來避免每次運行都重新下載和讀取數據。"""
+    st.info(f"正在從 URL 讀取數據: {url}")
+    # 使用 GeoPandas 从 URL 读取数据
+    gdf = gpd.read_file(url)
+    return gdf
+
 def load_and_display_map():
     """載入 GeoData 並使用 Leafmap 繪製地圖。"""
     
-    st.info(f"正在載入向量數據: {VECTOR_NAME}...")
-
+    # 嘗試載入數據
     try:
-        # 使用 GeoPandas 从 URL 读取数据
-        gdf = gpd.read_file(VECTOR_URL)
+        gdf = load_geodata(VECTOR_URL)
+        
+    except Exception as e:
+        st.error(f"數據載入失敗。請檢查您的網絡或 GeoJSON URL 是否有效。錯誤：`{e}`")
+        st.warning(f"當前使用的 URL：{VECTOR_URL}")
+        return # 數據失敗則停止執行地圖繪製
 
-        # **修正错误：动态检查列名**
-        # 假设新的台湾数据包含 'COUNTYNAME' (县市名称)
-        # 如果没有，我们会尝试使用其他列，避免程序崩溃。
-        display_cols = ['COUNTYNAME', 'geometry'] if 'COUNTYNAME' in gdf.columns else gdf.columns.tolist()
-        if 'geometry' in display_cols:
-             display_cols.remove('geometry')
-        display_cols = ['geometry'] + display_cols[:2] # 确保 geometry 在最后，只显示少数几列
-        
-        st.subheader("數據概覽 (前 5 行)")
-        # 使用存在的列进行显示
-        st.dataframe(gdf[display_cols].head(), use_container_width=True)
+    # --- 數據概覽顯示 ---
+    st.subheader("數據概覽 (前 5 行)")
+    
+    # 動態檢查 GeoDataFrame 的欄位
+    # 這裡假設 GeoJSON 數據包含 'COUNTYNAME' (縣市名稱) 或 'NAME'
+    primary_col = next((col for col in ['COUNTYNAME', 'name', 'NAME'] if col in gdf.columns), gdf.columns[0])
+    
+    # 確保只顯示少數幾列，且不顯示 geometry (GeoPandas 的默認顯示可能很慢)
+    cols_to_display = [col for col in gdf.columns if col != 'geometry'][:5]
+    if primary_col not in cols_to_display:
+        cols_to_display.insert(0, primary_col)
 
-        # --- 建立 Leafmap 地圖 ---
-        m = leafmap.Map(center=TAIWAN_CENTER, zoom=TAIWAN_ZOOM) 
-        
-        # --- GeoDataFrame 加入地圖 ---
-        # Tooltip 使用 'COUNTYNAME' 或第一个可用列
-        tooltip_col = 'COUNTYNAME' if 'COUNTYNAME' in gdf.columns else gdf.columns[0]
-        
+    st.dataframe(gdf[cols_to_display].head(), use_container_width=True)
+
+    # --- 建立 Leafmap 地圖 ---
+    st.subheader("Leafmap 互動地圖顯示 - 台灣")
+    
+    # 使用 foliumap 模組
+    m = leafmap.Map(
+        center=TAIWAN_CENTER, 
+        zoom=TAIWAN_ZOOM,
+        # 可以指定一個台灣常用的底圖，例如 OpenStreetMap
+        tiles='OpenStreetMap' 
+    ) 
+    
+    # --- GeoDataFrame 加入地圖 ---
+    # Tooltip 使用我們找到的第一個主要欄位
+    tooltip_col = primary_col
+    
+    try:
         m.add_gdf(
             gdf,
             layer_name=VECTOR_NAME,
-            # 自定义样式：灰色填充，黑色边框
-            style={"fillOpacity": 0.5, "color": "black", "weight": 1.0, "fillColor": "lightgray"},
-            # 开启 Tooltip 和 Highlight
+            # 自定义样式：輕微填充，黑色邊框
+            style={"fillOpacity": 0.5, "color": "black", "weight": 1.0, "fillColor": "lightblue"},
+            # 設置 Tooltip 顯示欄位
             tooltip=leafmap.tooltip_initializer(gdf[[tooltip_col]]),
-            highlight=True
+            highlight=True,
+            # 添加 Legend (如果有分類的話，這裡先不加，保持簡潔)
         )
 
         m.add_layer_control()
 
-        st.subheader("Leafmap 互動地圖顯示 - 台灣")
+        # 將地圖渲染到 Streamlit
         m.to_streamlit(height=700)
-        
+
     except Exception as e:
-        # **捕获并显示具体的列名错误或网络错误**
-        st.error(f"地圖或數據載入失敗。請確認網路連接或依賴庫：錯誤：`{e}`")
-        st.warning("如果錯誤包含 'No such file' 或 'HTTP Error'，請檢查上面的數據源 URL 是否有效。")
+        # 捕獲地圖繪製或數據格式化錯誤
+        st.error(f"地圖繪製失敗，可能是 GeoDataFrame 結構問題。錯誤：`{e}`")
+        st.warning("請確保 GeoDataFrame 的 'geometry' 列是有效的地理空間數據。")
 
 
-# 执行地图加载
+# ----------------------------------------------------------------------------
+# 4. 執行主函數
+# ----------------------------------------------------------------------------
+# 這是確保函數被呼叫並執行的關鍵步驟
+load_and_display_map()
