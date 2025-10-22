@@ -17,7 +17,7 @@ st.markdown("---")
 # 2. 數據源定義 (替換為一個可用的 GeoJSON URL)
 # ----------------------------------------------------------------------------
 # 🚨 舊 URL 發生 404 錯誤，請使用以下 URL 替換：
-VECTOR_URL = "https://raw.githubusercontent.com/gishub/leafmap/master/examples/data/taiwan_counties.geojson" 
+VECTOR_URL = "https://raw.githubusercontent.com/g0v/tw-map/master/json/county/taiwan_county_2020.json" 
 VECTOR_NAME = "台灣縣市邊界 (Leafmap 範例數據)"
 
 # 台灣的中心坐標和合適的縮放級別
