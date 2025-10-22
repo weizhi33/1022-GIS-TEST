@@ -14,22 +14,15 @@ st.title("第 2 頁 (map_viewer.py): 互動地圖瀏覽器 - 台灣地圖")
 st.markdown("---")
 
 # ----------------------------------------------------------------------------
-# 2. 數據源定義 (改用 GeoJSON 提高穩定性)
+# 2. 數據源定義 (替換為一個可用的 GeoJSON URL)
 # ----------------------------------------------------------------------------
-# 使用另一個公開的台灣行政區劃 GeoJSON 檔案，此檔案通常更容易讀取。
-# 來源可能包含 'COUNTYNAME' (縣市名稱) 或類似的欄位。
-# 註: 您提供的 TopoJSON 鏈接：
-# VECTOR_URL = "https://raw.githubusercontent.com/g0v/tw-map/master/json/county/taiwan_county_2010.topojson"
-# 替換為一個標準 GeoJSON (此示例URL是常見的測試數據，可能會隨時間失效，請注意)
-# 🚨 警告：此 GeoJSON URL 僅為示例，請替換為您確認有效的 GeoJSON URL。
-# 這裡使用一個可能的替代 GeoJSON URL
-VECTOR_URL = "https://raw.githubusercontent.com/g0v/tw-map/master/json/county/taiwan_county_2010.json" 
-VECTOR_NAME = "台灣縣市邊界 GeoJSON"
+# 🚨 舊 URL 發生 404 錯誤，請使用以下 URL 替換：
+VECTOR_URL = "https://raw.githubusercontent.com/gishub/leafmap/master/examples/data/taiwan_counties.geojson" 
+VECTOR_NAME = "台灣縣市邊界 (Leafmap 範例數據)"
 
 # 台灣的中心坐標和合適的縮放級別
 TAIWAN_CENTER = [23.8, 120.96]
-TAIWAN_ZOOM = 7
-
+# TAIWAN_ZOOM 保持不變
 
 # ----------------------------------------------------------------------------
 # 3. 核心地圖載入與顯示函數
