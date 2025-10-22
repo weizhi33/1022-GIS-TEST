@@ -98,4 +98,24 @@ def load_and_display_map():
             gdf,
             layer_name=VECTOR_NAME,
             # 自定义样式：輕微填充，黑色邊框
-            style={"fillOpacity": 0.5, "color": "black", "weight":
+            style={"fillOpacity": 0.5, "color": "black", "weight": 1.0, "fillColor": "lightblue"},
+            # 設置 Tooltip 顯示欄位
+            tooltip=leafmap.tooltip_initializer(gdf[[tooltip_col]]),
+            highlight=True,
+        )
+
+        m.add_layer_control()
+
+        # 將地圖渲染到 Streamlit
+        m.to_streamlit(height=700)
+
+    except Exception as e:
+        # 捕獲地圖繪製或數據格式化錯誤
+        st.error(f"地圖繪製失敗。錯誤：`{e}`")
+        st.warning("如果 Shapefile 載入成功但繪製失敗，可能是投影系統 (CRS) 不兼容。")
+
+
+# ----------------------------------------------------------------------------
+# 4. 執行主函數
+# ----------------------------------------------------------------------------
+load_and_display_map()
