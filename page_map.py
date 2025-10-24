@@ -17,7 +17,7 @@ st.title("第 2 頁 (page_map.py): 互動地圖瀏覽器 - 世界國家邊界")
 st.markdown("---")
 
 # ----------------------------------------------------------------------------
-# 2. 數據源定義 (使用老師提供的 Natural Earth 穩定 URL)
+# 2. 數據源定義 (使用 Natural Earth 穩定 URL)
 # ----------------------------------------------------------------------------
 # GeoPandas 直接從遠端 ZIP URL 讀取 Shapefile
 VECTOR_URL = "https://naciscdn.org/naturalearth/110m/cultural/ne_110m_admin_0_countries.zip" 
@@ -32,9 +32,7 @@ MAP_ZOOM = 2 # 縮放級別調小，以便看到全世界
 # ----------------------------------------------------------------------------
 @st.cache_data(show_spinner="正在從遠端載入 Natural Earth 數據...")
 def load_geodata(url):
-    """
-    使用 Streamlit 緩存，從遠端 URL 讀取 Shapefile (ZIP 壓縮)。
-    """
+    """使用 Streamlit 緩存，從遠端 URL 讀取 Shapefile (ZIP 壓縮)。"""
     st.info(f"正在從 URL 讀取 Shapefile: {url}")
     gdf = gpd.read_file(url)
     return gdf
@@ -45,9 +43,10 @@ def load_and_display_map():
     # 嘗試載入數據
     try:
         gdf = load_geodata(VECTOR_URL)
-        st.success("數據成功載入！") #
+        st.success("數據成功載入！") 
         
     except Exception as e:
+        # 如果這個公開 URL 都失敗，那可能是網絡或 GeoPandas 環境本身的問題了
         st.error(f"數據載入失敗！請檢查您的網絡連線。錯誤：`{e}`")
         return 
 
@@ -56,6 +55,7 @@ def load_and_display_map():
     
     # Natural Earth 數據通常有 'NAME' 欄位
     potential_cols = ['NAME', 'name', 'ADMIN']
+    # 確保 primary_col 是存在的欄位，否則使用第一個欄位
     primary_col = next((col for col in potential_cols if col in gdf.columns), gdf.columns[0])
     
     cols_to_display = [col for col in gdf.columns if col != 'geometry'][:5]
@@ -75,8 +75,6 @@ def load_and_display_map():
     ) 
     
     # --- GeoDataFrame 加入地圖 ---
-    tooltip_col = primary_col
-    
     try:
         m.add_gdf(
             gdf,
@@ -84,9 +82,8 @@ def load_and_display_map():
             # 自定义样式：透明填充和灰色邊框
             style={"fillOpacity": 0.0, "color": "gray", "weight": 0.5, "fillColor": "none"},
             
-            # 💡 關鍵修正：直接傳遞 GeoDataFrame 的屬性 (Pandas DataFrame 部分)
-            # 解決 'tooltip_initializer' 錯誤
-            tooltip=gdf[[tooltip_col]], 
+            # *** 關鍵修正：移除 tooltip 參數 ***
+            # 解決 'multiple values for keyword argument' 的 Folium 繪製衝突
             
             highlight=True,
         )
